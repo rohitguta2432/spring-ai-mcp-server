@@ -1,0 +1,133 @@
+{
+  "schema_name": "bs",
+  "synonyms": ["bootstrap", "bootstrap schema", "core config", "bootstrap system"],
+  "description": "Bootstrap schema for core system configuration and vehicle management",
+  "tables": [
+    {
+      "separator": "table_1",
+      "name": "bs.profile",
+      "synonyms": ["profile", "profiles", "configuration profiles", "config profile table"],
+      "schema": "CREATE TABLE bs.profile (profile_name VARCHAR(50) NOT NULL PRIMARY KEY, active BOOLEAN NOT NULL, creation_date TIMESTAMP(6), description VARCHAR(300), profile_hash VARCHAR(64), profile_object JSONB, update_date TIMESTAMP(6), profile_cache_object JSONB);",
+      "description": "This table stores configuration profiles for the system, containing profile metadata and settings in JSON format.",
+      "columns": [
+        { "name": "profile_name", "description": "Unique identifier for the profile, primary key", "synonyms": ["profile id", "profile identifier", "config name"] },
+        { "name": "active", "description": "Boolean flag indicating if the profile is currently active and usable", "synonyms": ["enabled", "status", "is active"] },
+        { "name": "creation_date", "description": "Timestamp when the profile was first created", "synonyms": ["created at", "created on", "creation time"] },
+        { "name": "description", "description": "Text description explaining the purpose and details of the profile", "synonyms": ["profile description", "details", "notes"] },
+        { "name": "profile_hash", "description": "Hash value for profile integrity verification and change detection", "synonyms": ["hash", "checksum", "profile checksum"] },
+        { "name": "profile_object", "description": "JSON object containing the main profile configuration data", "synonyms": ["config data", "profile config", "profile json"] },
+        { "name": "update_date", "description": "Timestamp when the profile was last modified", "synonyms": ["updated at", "last modified", "modification time"] },
+        { "name": "profile_cache_object", "description": "JSON object containing cached profile data for performance optimization", "synonyms": ["cache data", "cached config", "profile cache"] }
+      ],
+      "relationships": {
+        "foreign_keys": [],
+        "referenced_by": [
+          { "table": "bs.bs_vehicle", "column": "profile_name", "relationship_type": "one_to_many", "description": "A profile can be associated with multiple vehicles" },
+          { "table": "bs.event", "column": "profile_name", "relationship_type": "one_to_many", "description": "A profile can have multiple events logged" }
+        ],
+        "common_joins": [
+          "JOIN bs.bs_vehicle v ON p.profile_name = v.profile_name",
+          "JOIN bs.event e ON p.profile_name = e.profile_name"
+        ]
+      },
+      "sample_queries": [
+        { "query": "select count(*) as active_profiles from bs.profile where active = true", "user_input": "How many active profiles are there?" },
+        { "query": "select profile_name, description from bs.profile where creation_date >= '2024-01-01'", "user_input": "Show me all profiles created in 2024" }
+      ]
+    },
+    {
+      "separator": "table_2",
+      "name": "bs.event",
+      "synonyms": ["registration", "events", "system events", "logs", "activity log", "event log"],
+      "schema": "CREATE TABLE bs.event (event_id SERIAL PRIMARY KEY, event_date TIMESTAMP(6) NOT NULL, profile_name VARCHAR(50), status VARCHAR(50), serial_number VARCHAR(25));",
+      "description": "This table logs system events and activities, tracking operations performed with their status",
+      "columns": [
+        { "name": "event_id", "description": "Unique auto-incrementing identifier for each event", "synonyms": ["event identifier", "id", "event number"] },
+        { "name": "event_date", "description": "Timestamp when the event occurred", "synonyms": ["registration date","event time", "occurred at", "timestamp"] },
+        { "name": "profile_name", "description": "Reference to the profile associated with this event", "synonyms": ["profile id", "config name", "profile identifier"] },
+        { "name": "status", "description": "Current status of the event (e.g., success, failed, pending)", "synonyms": ["event status", "state", "result"] },
+        { "name": "serial_number", "description": "Serial number of the device or ECU associated with the event", "synonyms": ["device serial", "ecu serial", "hardware id"] }
+      ],
+      "relationships": {
+        "foreign_keys": [
+          { "column": "profile_name", "references_table": "bs.profile", "references_column": "profile_name", "relationship_type": "many_to_one", "description": "Events are associated with configuration profiles" }
+        ],
+        "referenced_by": [],
+        "common_joins": [
+          "JOIN bs.profile p ON e.profile_name = p.profile_name",
+          "JOIN bs.bs_ecu ecu ON e.serial_number = ecu.serial_number"
+        ]
+      },
+      "sample_queries": [
+        { "query": "select count(*) as failed_events from bs.event where status = 'failed' and event_date >= current_date - interval '7 days'", "user_input": "How many failed events occurred in the last 7 days?" },
+        { "query": "select serial_number, count(*) as event_count from bs.event where event_date >= '2024-01-01' group by serial_number order by event_count desc", "user_input": "Show me the devices with most events this year" }
+      ]
+    },
+    {
+      "separator": "table_3",
+      "name": "bs.bs_vehicle",
+      "synonyms": ["vehicle", "vehicles", "bootstrap vehicles", "car", "automobile", "vehicle master"],
+      "schema": "CREATE TABLE bs.bs_vehicle (vin VARCHAR(17) NOT NULL PRIMARY KEY, active BOOLEAN DEFAULT true NOT NULL, creation_date TIMESTAMP(6) NOT NULL, update_date TIMESTAMP(6) NOT NULL, vehicle_architecture VARCHAR(7) NOT NULL, vehicle_program_code VARCHAR(7) NOT NULL, vehicle_region VARCHAR(7) NOT NULL, profile_name VARCHAR(50) REFERENCES bs.profile (profile_name));",
+      "description": "This table stores vehicle information including VIN, architecture details, and associated configuration profiles.",
+      "columns": [
+        { "name": "vin", "description": "Vehicle Identification Number, unique 17-character identifier for each vehicle", "synonyms": ["vehicle id", "vehicle identifier", "chassis number"] },
+        { "name": "active", "description": "Boolean flag indicating if the vehicle record is currently active", "synonyms": ["enabled", "is active", "vehicle status"] },
+        { "name": "creation_date", "description": "Timestamp when the vehicle record was first created in the system", "synonyms": ["created at", "registration date", "added on"] },
+        { "name": "update_date", "description": "Timestamp when the vehicle record was last modified", "synonyms": ["updated at", "last modified", "modification time"] },
+        { "name": "vehicle_architecture", "description": "Code representing the vehicle's technical architecture platform", "synonyms": ["architecture", "platform", "vehicle platform"] },
+        { "name": "vehicle_program_code", "description": "Code identifying the vehicle program or model line", "synonyms": ["program code", "model code", "vehicle program"] },
+        { "name": "vehicle_region", "description": "Code representing the geographic region where the vehicle is deployed", "synonyms": ["region", "market", "deployment region"] },
+        { "name": "profile_name", "description": "Reference to the configuration profile associated with this vehicle", "synonyms": ["config profile", "profile id", "vehicle profile"] }
+      ],
+      "relationships": {
+        "foreign_keys": [
+          { "column": "profile_name", "references_table": "bs.profile", "references_column": "profile_name", "relationship_type": "many_to_one", "description": "Vehicles are associated with configuration profiles" }
+        ],
+        "referenced_by": [
+          { "table": "bs.bs_ecu", "column": "vin", "relationship_type": "one_to_many", "description": "A vehicle can have multiple ECUs installed" }
+        ],
+        "common_joins": [
+          "JOIN bs.profile p ON v.profile_name = p.profile_name",
+          "JOIN bs.bs_ecu e ON v.vin = e.vin"
+        ]
+      },
+      "sample_queries": [
+        { "query": "select vehicle_region, count(*) as vehicle_count from bs.bs_vehicle where active = true group by vehicle_region", "user_input": "How many active vehicles are there in each region?" },
+        { "query": "select v.vin, v.vehicle_program_code, p.description from bs.bs_vehicle v join bs.profile p on v.profile_name = p.profile_name where v.creation_date >= '2024-01-01'", "user_input": "Show me vehicles created this year with their profile details" }
+      ]
+    },
+    {
+      "separator": "table_4",
+      "name": "bs.bs_ecu",
+      "synonyms": ["ecu", "ecus", "electronic control unit", "device", "hardware", "control unit"],
+      "schema": "CREATE TABLE bs.bs_ecu (serial_number VARCHAR(25) NOT NULL PRIMARY KEY, active BOOLEAN DEFAULT true NOT NULL, device_type VARCHAR(10) NOT NULL, device_variant_type VARCHAR(50) NOT NULL, vin VARCHAR(17) REFERENCES bs.bs_vehicle(vin), creation_date TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP NOT NULL, update_date TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP NOT NULL);",
+      "description": "This table stores Electronic Control Unit (ECU) information, tracking devices installed in vehicles with their specifications.",
+      "columns": [
+        { "name": "serial_number", "description": "Unique serial number identifying the ECU device", "synonyms": ["ecu serial", "device serial", "hardware id"] },
+        { "name": "active", "description": "Boolean flag indicating if the ECU is currently active and operational", "synonyms": ["enabled", "is active", "ecu status"] },
+        { "name": "device_type", "description": "Type classification of the ECU device", "synonyms": ["ecu type", "device category", "hardware type"] },
+        { "name": "device_variant_type", "description": "Specific variant or model of the ECU device type", "synonyms": ["device variant", "ecu model", "hardware variant"] },
+        { "name": "vin", "description": "Vehicle Identification Number of the vehicle this ECU is installed in", "synonyms": ["vehicle id", "vehicle identifier", "associated vehicle"] },
+        { "name": "creation_date", "description": "Timestamp when the ECU record was first created in the system", "synonyms": ["created at", "registered on", "installation date"] },
+        { "name": "update_date", "description": "Timestamp when the ECU record was last modified", "synonyms": ["updated at", "last modified", "modification time"] }
+      ],
+      "relationships": {
+        "foreign_keys": [
+          { "column": "vin", "references_table": "bs.bs_vehicle", "references_column": "vin", "relationship_type": "many_to_one", "description": "ECUs are installed in vehicles" }
+        ],
+        "referenced_by": [],
+        "common_joins": [
+          "JOIN bs.bs_vehicle v ON e.vin = v.vin",
+          "JOIN bs.bs_vehicle v ON e.vin = v.vin JOIN bs.profile p ON v.profile_name = p.profile_name"
+        ],
+        "cross_schema_relationships": [
+          { "table": "gtw.ecu", "join_condition": "bs.bs_ecu.serial_number = gtw.ecu.serial_number", "description": "Cross-schema ECU comparison by serial number" }
+        ]
+      },
+      "sample_queries": [
+        { "query": "select device_type, count(*) as ecu_count from bs.bs_ecu where active = true group by device_type", "user_input": "How many active ECUs are there by device type?" },
+        { "query": "select e.serial_number, e.device_type, v.vehicle_program_code from bs.bs_ecu e join bs.bs_vehicle v on e.vin = v.vin where e.creation_date >= current_date - interval '30 days'", "user_input": "Show me ECUs installed in the last 30 days with their vehicle program" }
+      ]
+    }
+  ]
+}

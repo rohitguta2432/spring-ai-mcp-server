@@ -1,0 +1,69 @@
+{
+  "cross_schema_relationships": [
+    {
+      "relationship_id": "ecu_cross_schema",
+      "description": "ECU tables exist in both schemas with potential for cross-schema queries",
+      "tables": ["bs.bs_ecu", "gtw.ecu"],
+      "join_conditions": [
+        "bs.bs_ecu.serial_number = gtw.ecu.serial_number",
+        "bs.bs_ecu.vin = gtw.ecu.vin"
+      ],
+      "use_cases": [
+        "Compare ECU data across bootstrap and gateway systems",
+        "Find ECUs that exist in one schema but not the other",
+        "Validate data consistency between schemas"
+      ],
+      "sample_queries": [
+        {
+          "query": "SELECT b.serial_number, b.device_type as bs_device_type, g.device_type as gtw_device_type FROM bs.bs_ecu b FULL OUTER JOIN gtw.ecu g ON b.serial_number = g.serial_number WHERE b.serial_number IS NULL OR g.serial_number IS NULL",
+          "user_input": "Show me ECUs that exist in one schema but not the other"
+        }
+      ]
+    },
+    {
+      "relationship_id": "vehicle_cross_schema",
+      "description": "Vehicle tables exist in both schemas with VIN as common identifier",
+      "tables": ["bs.bs_vehicle", "gtw.vehicle"],
+      "join_conditions": [
+        "bs.bs_vehicle.vin = gtw.vehicle.vin"
+      ],
+      "use_cases": [
+        "Compare vehicle data across bootstrap and gateway systems",
+        "Cross-reference vehicle architecture and program codes",
+        "Validate vehicle data consistency"
+      ],
+      "sample_queries": [
+        {
+          "query": "SELECT b.vin, b.vehicle_program_code as bs_program, g.vehicle_program_code as gtw_program FROM bs.bs_vehicle b JOIN gtw.vehicle g ON b.vin = g.vin WHERE b.vehicle_program_code != g.vehicle_program_code",
+          "user_input": "Show me vehicles with different program codes between schemas"
+        }
+      ]
+    }
+  ],
+  "relationship_patterns": [
+    {
+      "pattern_name": "profile_vehicle_ecu_chain",
+      "description": "Chain relationship from profile to vehicle to ECU in BS schema",
+      "tables": ["bs.profile", "bs.bs_vehicle", "bs.bs_ecu"],
+      "join_path": "bs.profile → bs.bs_vehicle → bs.bs_ecu",
+      "join_sql": "JOIN bs.bs_vehicle v ON p.profile_name = v.profile_name JOIN bs.bs_ecu e ON v.vin = e.vin",
+      "use_case": "Get all ECUs associated with a specific configuration profile"
+    },
+    {
+      "pattern_name": "vehicle_ecu_registration_chain",
+      "description": "Chain relationship from vehicle to ECU to registration events in GTW schema",
+      "tables": ["gtw.vehicle", "gtw.ecu", "gtw.registration_events"],
+      "join_path": "gtw.vehicle → gtw.ecu → gtw.registration_events",
+      "join_sql": "JOIN gtw.ecu e ON v.vin = e.vin JOIN gtw.registration_events re ON e.serial_number = re.serial_number",
+      "use_case": "Get all registration events for ECUs in a specific vehicle"
+    },
+    {
+      "pattern_name": "operation_group_hierarchy",
+      "description": "Parent-child relationship between operation groups and individual operations",
+      "tables": ["gtw.device_operations_group_reference", "gtw.device_operation_reference"],
+      "join_path": "gtw.device_operations_group_reference → gtw.device_operation_reference",
+      "join_sql": "JOIN gtw.device_operation_reference dor ON dogr.id = dor.operation_group_id",
+      "use_case": "Get all individual operations within a specific operation group"
+    }
+  ]
+}

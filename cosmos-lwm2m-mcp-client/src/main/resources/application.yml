@@ -1,0 +1,120 @@
+spring:
+  application:
+    # Application name
+    name: lwm2m-mcp-client
+
+  thymeleaf:
+    cache: false
+    prefix: classpath:/templates/
+    suffix: .html
+
+  datasource:
+    # PostgreSQL connection details
+    url: jdbc:postgresql://localhost:5432/lwm2m
+    username: postgres
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    # Custom dialect for PGVector
+    database-platform: com.stellantis.lwm2m.mcp.client.config.PostgreSQLVectorDialect
+    hibernate:
+      ddl-auto: update   # Auto-update schema (use cautiously in prod)
+    show-sql: true       # Show SQL queries in logs
+
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:/sql/chat_memory.sql
+
+  ai:
+    mcp:
+      client:
+        # Define SSE connection to MCP server
+        sse:
+          connections:
+            lwm2m-mcp-server:
+              url: http://localhost:8082
+            # elk-mcp-server:
+            #   url: http://localhost:3000/mcp
+        type: SYNC   # Client type (SYNC or ASYNC)
+        toolcallback:
+          enabled: true
+
+    # OpenAI configuration
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      chat:
+        options:
+          model: gpt-4.1 #gpt-4.1
+          temperature: 0.2 #0.2
+          # max-tokens: 1000
+      embedding:
+        options:
+          model: text-embedding-3-small
+          # Alternative: text-embedding-3-large
+
+    # AWS Bedrock Titan configuration
+    bedrock:
+      aws:
+        region: ap-south-1
+      titan:
+        embedding:
+          options:
+            model: amazon.titan-embed-text-v2:0
+
+    # ✅ Observability for Spring AI
+    chat:
+      observations:
+        enabled: true
+        log-prompt: false          # avoid logging sensitive prompts
+        log-completion: false
+        include-error-logging: true
+    vectorstore:
+      observations:
+        enabled: true
+        log-query-response: false
+    embedding:
+      observations:
+        enabled: true
+
+hybrid:
+  embedding:
+    primary: openai   # or bedrock
+
+server:
+  # Service port
+  port: 8084
+
+logging:
+  level:
+    # Enable detailed logs for MCP
+    org.springframework.ai.mcp: TRACE
+    org.springframework.ai.chat.client.advisor: DEBUG
+    ai.chat.memory.repository: DEBUG
+
+# ✅ Management & Metrics configuration (non-deprecated)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, metrics, prometheus, traces
+  prometheus:
+    metrics:
+      export:
+        enabled: true     # modern property (optional, defaults to true)
+  metrics:
+    tags:
+      application: lwm2m-mcp-client
+  tracing:
+    sampling:
+      probability: 1.0
+
+# ✅ OpenTelemetry tracing configuration
+otel:
+  exporter:
+    otlp:
+      endpoint: http://localhost:4318   # Default OTLP collector endpoint
+  traces:
+    sampler:
+      probability: 1.0                  # Sample all traces

@@ -1,0 +1,234 @@
+{
+  "schema_name": "gtw",
+  "synonyms": ["gateway", "gw", "gateway schema", "lwm2m server", "operations"],
+  "description": "Gateway schema for LwM2M device management and operations",
+  "tables": [
+    {
+      "separator": "table_1",
+      "name": "gtw.vehicle",
+      "synonyms": ["vehicle", "vehicles", "gateway vehicles", "car", "automobile", "vehicle master"],
+      "schema": "CREATE TABLE gtw.vehicle (vin VARCHAR(17) NOT NULL PRIMARY KEY, active BOOLEAN DEFAULT true NOT NULL, creation_date TIMESTAMP(6) NOT NULL, update_date TIMESTAMP(6) NOT NULL, vehicle_architecture VARCHAR(7) NOT NULL, vehicle_program_code VARCHAR(3), vehicle_region VARCHAR(5));",
+      "description": "This table stores vehicle master data including VIN, architecture, program codes, and regional information.",
+      "columns": [
+        { "name": "vin", "description": "Vehicle Identification Number, unique 17-character identifier for each vehicle", "synonyms": ["vehicle id", "vehicle identifier", "chassis number"] },
+        { "name": "active", "description": "Boolean flag indicating if the vehicle record is currently active", "synonyms": ["enabled", "is active", "vehicle status"] },
+        { "name": "creation_date", "description": "Timestamp when the vehicle record was first created in the system", "synonyms": ["created at", "registration date", "added on"] },
+        { "name": "update_date", "description": "Timestamp when the vehicle record was last modified", "synonyms": ["updated at", "last modified", "modification time"] },
+        { "name": "vehicle_architecture", "description": "Code representing the vehicle's technical architecture platform", "synonyms": ["architecture", "platform", "vehicle platform"] },
+        { "name": "vehicle_program_code", "description": "3-character code identifying the vehicle program or model line", "synonyms": ["program code", "model code", "vehicle program"] },
+        { "name": "vehicle_region", "description": "5-character code representing the geographic region where the vehicle is deployed", "synonyms": ["region", "market", "deployment region"] }
+      ],
+      "relationships": {
+        "foreign_keys": [],
+        "referenced_by": [
+          { "table": "gtw.ecu", "column": "vin", "relationship_type": "one_to_many", "description": "A vehicle can have multiple ECUs installed" }
+        ],
+        "common_joins": [
+          "JOIN gtw.ecu e ON v.vin = e.vin"
+        ],
+        "cross_schema_relationships": [
+          { "table": "bs.bs_vehicle", "join_condition": "gtw.vehicle.vin = bs.bs_vehicle.vin", "description": "Cross-schema vehicle comparison by VIN" }
+        ]
+      },
+      "sample_queries": [
+        { "query": "select vehicle_region, count(*) as vehicle_count from gtw.vehicle where active = true group by vehicle_region", "user_input": "How many active vehicles are there in each region?" }
+      ]
+    },
+    {
+      "separator": "table_2",
+      "name": "gtw.ecu",
+      "synonyms": ["ecu", "ecus", "electronic control unit", "device", "hardware", "control unit"],
+      "schema": "CREATE TABLE gtw.ecu (serial_number VARCHAR(25) NOT NULL PRIMARY KEY, active BOOLEAN DEFAULT true NOT NULL, device_type VARCHAR(10) NOT NULL, device_variant_type VARCHAR(50), vin VARCHAR(17) NOT NULL REFERENCES gtw.vehicle, creation_date TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP NOT NULL, update_date TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP NOT NULL);",
+      "description": "This table stores Electronic Control Unit (ECU) information, tracking IoT devices installed in vehicles with their specifications.",
+      "columns": [
+        { "name": "serial_number", "description": "Unique serial number identifying the ECU device", "synonyms": ["ecu serial", "device serial", "hardware id"] },
+        { "name": "active", "description": "Boolean flag indicating if the ECU is currently active and operational", "synonyms": ["enabled", "is active", "ecu status"] },
+        { "name": "device_type", "description": "Type classification of the ECU device (10 characters max)", "synonyms": ["ecu type", "device category", "hardware type"] },
+        { "name": "device_variant_type", "description": "Specific variant or model of the ECU device type", "synonyms": ["device variant", "ecu model", "hardware variant"] },
+        { "name": "vin", "description": "Vehicle Identification Number of the vehicle this ECU is installed in", "synonyms": ["vehicle id", "vehicle identifier", "associated vehicle"] },
+        { "name": "creation_date", "description": "Timestamp when the ECU record was first created in the system", "synonyms": ["created at", "registered on", "installation date"] },
+        { "name": "update_date", "description": "Timestamp when the ECU record was last modified", "synonyms": ["updated at", "last modified", "modification time"] }
+      ],
+      "relationships": {
+        "foreign_keys": [
+          { "column": "vin", "references_table": "gtw.vehicle", "references_column": "vin", "relationship_type": "many_to_one", "description": "ECUs are installed in vehicles" }
+        ],
+        "referenced_by": [
+          { "table": "gtw.registration_events", "column": "serial_number", "relationship_type": "one_to_many", "description": "An ECU can have multiple registration events" }
+        ],
+        "common_joins": [
+          "JOIN gtw.vehicle v ON e.vin = v.vin",
+          "JOIN gtw.registration_events re ON e.serial_number = re.serial_number"
+        ],
+        "cross_schema_relationships": [
+          { "table": "bs.bs_ecu", "join_condition": "gtw.ecu.serial_number = bs.bs_ecu.serial_number", "description": "Cross-schema ECU comparison by serial number" }
+        ]
+      },
+      "sample_queries": [
+        { "query": "select device_type, count(*) as ecu_count from gtw.ecu where active = true group by device_type", "user_input": "How many active ECUs are there by device type?" }
+      ]
+    },
+    {
+      "separator": "table_3",
+      "name": "gtw.registration_events",
+      "synonyms": ["registration", "registrations", "device registrations", "lwm2m registrations", "reg events"],
+      "schema": "CREATE TABLE gtw.registration_events (event_id INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, binding_mode VARCHAR(255), life_time INTEGER, location_path VARCHAR(19) UNIQUE, lwm2m_version VARCHAR(5), registration_date TIMESTAMP(6), registration_update_date TIMESTAMP(6), status VARCHAR(28), serial_number VARCHAR(25) UNIQUE REFERENCES gtw.ecu);",
+      "description": "This table tracks LwM2M device registration events with detailed protocol information and device lifecycle management.",
+      "columns": [
+        { "name": "event_id", "description": "Unique auto-generated identifier for each registration event", "synonyms": ["event identifier", "id", "registration id"] },
+        { "name": "binding_mode", "description": "LwM2M binding mode used for device communication", "synonyms": ["binding", "connection mode", "communication mode"] },
+        { "name": "life_time", "description": "Device registration lifetime duration in seconds", "synonyms": ["lifetime", "session duration", "registration period"] },
+        { "name": "location_path", "description": "Unique location path for the device in the LwM2M server", "synonyms": ["location", "device path", "endpoint path"] },
+        { "name": "lwm2m_version", "description": "Version of the LwM2M protocol specification being used", "synonyms": ["protocol version", "lwm2m ver", "spec version"] },
+        { "name": "registration_date", "description": "Timestamp when the device registration occurred", "synonyms": ["registered at", "registration time", "event time"] },
+        { "name": "registration_update_date", "description": "Timestamp of the last registration update or refresh", "synonyms": ["last update", "update time", "refresh time"] },
+        { "name": "status", "description": "Current status of the device registration (up to 28 characters)", "synonyms": ["registration status", "device state", "connection status"] },
+        { "name": "serial_number", "description": "Unique serial number of the ECU device associated with this registration", "synonyms": ["device serial", "ecu serial", "hardware id"] }
+      ],
+      "relationships": {
+        "foreign_keys": [
+          { "column": "serial_number", "references_table": "gtw.ecu", "references_column": "serial_number", "relationship_type": "one_to_one", "description": "Each registration event is associated with one ECU" }
+        ],
+        "referenced_by": [
+          { "table": "gtw.registration_object_status_events", "column": "event_id", "relationship_type": "one_to_many", "description": "A registration event can have multiple object status events" }
+        ],
+        "common_joins": [
+          "JOIN gtw.ecu e ON re.serial_number = e.serial_number",
+          "JOIN gtw.ecu e ON re.serial_number = e.serial_number JOIN gtw.vehicle v ON e.vin = v.vin"
+        ]
+      },
+      "sample_queries": [
+        { "query": "select status, count(*) as registration_count from gtw.registration_events group by status", "user_input": "What is the distribution of registration statuses?" }
+      ]
+    },
+    {
+      "separator": "table_4",
+      "name": "gtw.device_operations_group_reference",
+      "synonyms": ["operation group", "operation groups", "device op groups", "execution groups"],
+      "schema": "CREATE TABLE gtw.device_operations_group_reference (id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, created_date TIMESTAMP(6) NOT NULL, expiration_date TIMESTAMP(6), group_id VARCHAR(36) NOT NULL UNIQUE, priority VARCHAR(8), serial_number VARCHAR(25) NOT NULL, status VARCHAR(11) NOT NULL CHECK (status IN ('IN_PROGRESS','CLOSED','QUEUED')), updated_date TIMESTAMP(6) NOT NULL);",
+      "description": "This table manages groups of device operations with lifecycle tracking and priority management.",
+      "columns": [
+        { "name": "id", "description": "Unique auto-generated identifier for the operation group", "synonyms": ["group reference id", "identifier", "primary key"] },
+        { "name": "created_date", "description": "Timestamp when the operation group was created", "synonyms": ["creation time", "created at", "start time"] },
+        { "name": "expiration_date", "description": "Optional timestamp when the operation group expires", "synonyms": ["expires at", "expiry time", "timeout date"] },
+        { "name": "group_id", "description": "Unique 36-character group identifier (UUID format)", "synonyms": ["group identifier", "operation group id", "group uuid"] },
+        { "name": "priority", "description": "Priority level of the operation group (up to 8 characters)", "synonyms": ["operation priority", "execution priority", "priority level"] },
+        { "name": "serial_number", "description": "Serial number of the target device for these operations", "synonyms": ["device serial", "target device", "ecu serial"] },
+        { "name": "status", "description": "Current status of the operation group (IN_PROGRESS, CLOSED, or QUEUED)", "synonyms": ["group status", "operation status", "execution state"] },
+        { "name": "updated_date", "description": "Timestamp when the operation group was last updated", "synonyms": ["last updated", "modification time", "updated at"] }
+      ],
+      "relationships": {
+        "foreign_keys": [],
+        "referenced_by": [
+          { "table": "gtw.device_operation_reference", "column": "operation_group_id", "relationship_type": "one_to_many", "description": "An operation group can contain multiple individual operations" }
+        ],
+        "common_joins": [
+          "JOIN gtw.device_operation_reference dor ON dogr.id = dor.operation_group_id"
+        ]
+      },
+      "sample_queries": [
+        { "query": "select status, count(*) as group_count from gtw.device_operations_group_reference group by status", "user_input": "How many operation groups are there by status?" }
+      ]
+    },
+    {
+      "separator": "table_5",
+      "name": "gtw.device_operation_reference",
+      "synonyms": ["operation", "operations", "device ops", "individual operation", "action reference"],
+      "schema": "CREATE TABLE gtw.device_operation_reference (id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, cache_operation_object JSONB, group_id VARCHAR(36) NOT NULL, object_id INTEGER NOT NULL, object_name VARCHAR(80), object_version VARCHAR(255), operation_id VARCHAR(36) NOT NULL, operation_type VARCHAR(15), redis_stream_id VARCHAR(36) NOT NULL, status VARCHAR(12) NOT NULL CHECK (status IN ('EXPIRED','QUEUED','SUCCESS','FAILED','TERMINATED')), uri VARCHAR(30) NOT NULL, operation_group_id BIGINT REFERENCES gtw.device_operations_group_reference, creation_date TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP NOT NULL, update_date TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP NOT NULL);",
+      "description": "This table tracks individual device operations with detailed execution status and caching for performance optimization.",
+      "columns": [
+        { "name": "id", "description": "Unique auto-generated identifier for the device operation", "synonyms": ["operation reference id", "identifier", "primary key"] },
+        { "name": "cache_operation_object", "description": "JSON object containing cached operation data for performance", "synonyms": ["cached data", "operation cache", "cached object"] },
+        { "name": "group_id", "description": "UUID identifier linking to the operation group", "synonyms": ["operation group id", "group identifier", "parent group"] },
+        { "name": "object_id", "description": "LwM2M object ID being operated on", "synonyms": ["lwm2m object id", "target object", "object identifier"] },
+        { "name": "object_name", "description": "Name of the LwM2M object (up to 80 characters)", "synonyms": ["object name", "lwm2m object name", "target name"] },
+        { "name": "object_version", "description": "Version of the LwM2M object specification", "synonyms": ["object version", "spec version", "object spec"] },
+        { "name": "operation_id", "description": "Unique UUID identifier for this specific operation", "synonyms": ["operation identifier", "operation uuid", "unique id"] },
+        { "name": "operation_type", "description": "Type of operation being performed (up to 15 characters)", "synonyms": ["op type", "operation kind", "action type"] },
+        { "name": "redis_stream_id", "description": "Redis stream identifier for message processing", "synonyms": ["stream id", "redis id", "message stream"] },
+        { "name": "status", "description": "Current execution status (EXPIRED, QUEUED, SUCCESS, FAILED, TERMINATED)", "synonyms": ["operation status", "execution status", "result status"] },
+        { "name": "uri", "description": "LwM2M URI path for the operation target (up to 30 characters)", "synonyms": ["lwm2m uri", "resource uri", "target path"] },
+        { "name": "operation_group_id", "description": "Foreign key reference to the parent operation group", "synonyms": ["parent group id", "group reference", "belongs to group"] },
+        { "name": "creation_date", "description": "Timestamp when the operation was created", "synonyms": ["created at", "creation time", "started at"] },
+        { "name": "update_date", "description": "Timestamp when the operation was last updated", "synonyms": ["updated at", "last modified", "status changed"] }
+      ],
+      "relationships": {
+        "foreign_keys": [
+          { "column": "operation_group_id", "references_table": "gtw.device_operations_group_reference", "references_column": "id", "relationship_type": "many_to_one", "description": "Individual operations belong to operation groups" }
+        ],
+        "referenced_by": [],
+        "common_joins": [
+          "JOIN gtw.device_operations_group_reference dogr ON dor.operation_group_id = dogr.id"
+        ]
+      },
+      "sample_queries": [
+        { "query": "select status, count(*) as operation_count from gtw.device_operation_reference group by status", "user_input": "What is the distribution of operation statuses?" }
+      ]
+    },
+    {
+      "separator": "table_6",
+      "name": "gtw.object_definition",
+      "synonyms": ["object definitions", "lwm2m objects", "oma objects", "spec definitions", "resource templates"],
+      "schema": "CREATE TABLE gtw.object_definition (object_id INTEGER NOT NULL, version VARCHAR(7) NOT NULL, active BOOLEAN DEFAULT true NOT NULL, creation_date TIMESTAMP(6) NOT NULL, instance VARCHAR(255) NOT NULL, object_template JSONB, update_date TIMESTAMP(6) NOT NULL, urn VARCHAR(32), PRIMARY KEY (object_id, version));",
+      "description": "This table defines LwM2M object specifications with templates and metadata for device object management.",
+      "columns": [
+        { "name": "object_id", "description": "LwM2M object identifier (part of composite primary key)", "synonyms": ["lwm2m object id", "object identifier", "oma object id"] },
+        { "name": "version", "description": "Version of the object specification (part of composite primary key)", "synonyms": ["object version", "spec version", "definition version"] },
+        { "name": "active", "description": "Boolean flag indicating if this object definition is currently active", "synonyms": ["enabled", "is active", "definition status"] },
+        { "name": "creation_date", "description": "Timestamp when the object definition was created", "synonyms": ["created at", "definition created", "added on"] },
+        { "name": "instance", "description": "Instance configuration for the object definition", "synonyms": ["object instance", "instance config", "instance setting"] },
+        { "name": "object_template", "description": "JSON template defining the structure and resources of the object", "synonyms": ["template", "object structure", "resource definition"] },
+        { "name": "update_date", "description": "Timestamp when the object definition was last updated", "synonyms": ["updated at", "last modified", "definition updated"] },
+        { "name": "urn", "description": "Uniform Resource Name for the object (up to 32 characters)", "synonyms": ["resource name", "object urn", "unique name"] }
+      ],
+      "relationships": {
+        "foreign_keys": [],
+        "referenced_by": [
+          { "table": "gtw.device_type_object_reference", "column": "object_id, version", "relationship_type": "one_to_many", "description": "Object definitions can be referenced by multiple device types" },
+          { "table": "gtw.instance_definition", "column": "object_id, version", "relationship_type": "one_to_many", "description": "Object definitions can have multiple instance definitions" }
+        ],
+        "common_joins": [
+          "JOIN gtw.device_type_object_reference dtor ON od.object_id = dtor.object_id AND od.version = dtor.version",
+          "JOIN gtw.instance_definition id ON od.object_id = id.object_id AND od.version = id.version"
+        ]
+      },
+      "sample_queries": [
+        { "query": "select object_id, version, urn from gtw.object_definition where active = true order by object_id", "user_input": "Show me all active object definitions" }
+      ]
+    },
+    {
+      "separator": "table_7",
+      "name": "gtw.instance_definition",
+      "synonyms": ["instance definitions", "object instances", "lwm2m instances", "resource instances"],
+      "schema": "CREATE TABLE gtw.instance_definition (internal_instance_id INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, active BOOLEAN DEFAULT true NOT NULL, creation_date TIMESTAMP(6) NOT NULL, desc_overwritten VARCHAR(255), instance_id INTEGER, name_overwritten VARCHAR(255), resource_instance_definition JSONB, update_date TIMESTAMP(6) NOT NULL, object_id INTEGER, version VARCHAR(7), FOREIGN KEY (object_id, version) REFERENCES gtw.object_definition);",
+      "description": "This table defines instances of LwM2M objects with specific configurations and resource definitions.",
+      "columns": [
+        { "name": "internal_instance_id", "description": "Unique auto-generated identifier for the instance definition", "synonyms": ["instance id", "internal id", "primary key"] },
+        { "name": "active", "description": "Boolean flag indicating if this instance definition is currently active", "synonyms": ["enabled", "is active", "instance status"] },
+        { "name": "creation_date", "description": "Timestamp when the instance definition was created", "synonyms": ["created at", "instance created", "added on"] },
+        { "name": "desc_overwritten", "description": "Overridden description for this instance", "synonyms": ["description override", "custom description", "instance description"] },
+        { "name": "instance_id", "description": "Instance identifier within the object", "synonyms": ["instance number", "instance identifier", "object instance id"] },
+        { "name": "name_overwritten", "description": "Overridden name for this instance", "synonyms": ["name override", "custom name", "instance name"] },
+        { "name": "resource_instance_definition", "description": "JSON definition of resources for this instance", "synonyms": ["resource definition", "instance resources", "resource config"] },
+        { "name": "update_date", "description": "Timestamp when the instance definition was last updated", "synonyms": ["updated at", "last modified", "instance updated"] },
+        { "name": "object_id", "description": "LwM2M object identifier this instance belongs to", "synonyms": ["parent object id", "object identifier", "lwm2m object id"] },
+        { "name": "version", "description": "Version of the parent object specification", "synonyms": ["object version", "parent version", "spec version"] }
+      ],
+      "relationships": {
+        "foreign_keys": [
+          { "column": "object_id, version", "references_table": "gtw.object_definition", "references_column": "object_id, version", "relationship_type": "many_to_one", "description": "Instance definitions belong to object definitions" }
+        ],
+        "referenced_by": [
+          { "table": "gtw.device_type_instance_reference", "column": "internal_instance_id", "relationship_type": "one_to_many", "description": "Instance definitions can be referenced by multiple device types" }
+        ],
+        "common_joins": [
+          "JOIN gtw.object_definition od ON id.object_id = od.object_id AND id.version = od.version",
+          "JOIN gtw.device_type_instance_reference dtir ON id.internal_instance_id = dtir.internal_instance_id"
+        ]
+      },
+      "sample_queries": [
+        { "query": "select object_id, instance_id, name_overwritten from gtw.instance_definition where active = true", "user_input": "Show me all active instance definitions" }
+      ]
+    }
+  ]
+}

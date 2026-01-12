@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>COSMOS DAC CoT Chat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'dev-dark': '#ffffff',            
+                        'dev-darker': '#f8fafc',         
+                        'dev-accent': '#6366f1',         
+                        'dev-accent-hover': '#4f46e5',   
+                        'dev-secondary': '#3b82f6',      
+                        'dev-text': '#0f172a',           
+                        'dev-text-muted': '#475569',     
+                        'dev-border': '#e2e8f0',         
+                        'dev-message-user': '#eef2ff',   
+                        'dev-message-ai': '#f9fafb'      
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .chat-container { height: calc(100vh - 180px); }
+        .message-container { height: calc(100vh - 280px); overflow-y: auto; }
+        @keyframes blink { 0%,100% {opacity:1;} 50% {opacity:0;} }
+        .cursor { display:inline-block; width:2px; height:1em; background:#6366f1; margin-left:2px; animation:blink 1s infinite; }
+        ::-webkit-scrollbar { width:8px; }
+        ::-webkit-scrollbar-track { background:#f1f5f9; }
+        ::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:4px; }
+        ::-webkit-scrollbar-thumb:hover { background:#94a3b8; }
+        .suggestion-btn {
+            background-color: #e2e8f0;
+            color: #0f172a;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .suggestion-btn:hover {
+            background-color: #4f46e5;
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-dev-darker min-h-screen text-dev-text">
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <header class="mb-8">
+        <h1 class="text-3xl font-bold text-dev-accent">🪐 COSMOS DAC CoT</h1>
+        <p class="text-dev-text-muted mt-2">Streaming real-time answers from COSMOS DAC CoT assistant!</p>
+    </header>
+
+    <!-- Chat -->
+    <div class="bg-dev-dark rounded-xl shadow-lg p-6 chat-container border border-dev-border flex flex-col">
+        <div id="messageContainer" class="message-container flex-grow mb-4">
+            <!-- Welcome -->
+            <div class="flex mb-4">
+                <div class="w-10 h-10 rounded-full bg-dev-accent bg-opacity-20 flex items-center justify-center mr-3">
+                    <span class="text-lg">🪐</span>
+                </div>
+                <div class="bg-dev-message-ai rounded-lg p-3 max-w-3xl border border-dev-border">
+                    <p class="text-dev-text">Welcome! Ask me about COSMOS DAC CoT and see responses stream in real time 🚀</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="suggestions" class="flex flex-wrap gap-2 mt-2">
+            <button class="suggestion-btn">🔍 Show me all active ECUs</button>
+            <button class="suggestion-btn">📊 Get bootstrap profiles for VIN</button>
+            <button class="suggestion-btn">⚙️ List pending DM operations</button>
+        </div>
+        <!-- Input -->
+        <div class="border-t border-dev-border pt-4 mt-auto relative">
+            <form id="chatForm" class="flex w-full">
+                <div class="relative flex-grow flex items-center bg-dev-darker border border-dev-border rounded-l-lg">
+                    <div class="relative border-r border-dev-border">
+                        <select id="commandSelect"
+                                class="appearance-none bg-transparent px-3 py-3 pr-8 focus:outline-none text-dev-text cursor-pointer">
+                            <option value="/db" selected>/db</option>
+                            <option value="/help">/help</option>
+                            <option value="/recent">/recent</option>
+                            <option value="/clear">/clear</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-dev-text-muted">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <input id="userInput" autocomplete="off" type="text"
+                           class="flex-grow bg-transparent px-4 py-3 focus:outline-none text-dev-text"
+                           placeholder="Ask about COSMOS DAC CoT here...">
+                </div>
+                <button type="submit"
+                        class="bg-dev-accent text-white px-6 py-3 rounded-r-lg hover:bg-dev-accent-hover transition">Send</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    let conversationId = null;
+
+    //  Load existing conversation on page load
+    conversationId = sessionStorage.getItem('chatConversationId');
+    if (conversationId) {
+        console.log("Resumed conversation:", conversationId);
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const msgContainer = document.getElementById("messageContainer");
+        const chatForm = document.getElementById("chatForm");
+        const userInput = document.getElementById("userInput");
+        const commandSelect = document.getElementById("commandSelect");
+
+        let currentResponseElement = null;
+        let currentResponseText = "";
+
+        chatForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            // Combine command with message
+            const fullMessage = commandSelect.value + " " + message;
+
+            addMessage(fullMessage, "user");
+            userInput.value = "";
+
+            currentResponseElement = createResponseContainer();
+            currentResponseText = "";
+
+            const response = await fetch("/api/v3/cot-chat/stream", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text: fullMessage,
+                    ...(conversationId ? { conversationId } : {})
+                })
+            });
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = "";
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const events = buffer.split("\n\n");
+                buffer = events.pop();
+
+                for (const event of events) {
+                    if (event.startsWith("data: ")) {
+                        const payload = JSON.parse(event.slice(6));
+                        handleEvent(payload);
+                    }
+                }
+            }
+        });
+
+        function handleEvent(payload) {
+            switch(payload.type) {
+                case "analysis":
+                    appendToResponse("🤖 Intent: " + payload.data.intent + "<br>");
+                    break;
+                case "schema_selected":
+                    appendToResponse("📊 Schema: " + payload.data.selectedSchema + "<br>");
+                    break;
+                case "sql_generated":
+                    appendToResponse(`<span class="text-dev-accent text-sm">SQL → ${payload.data.sqlQuery}</span><br>`);
+                    break;
+                case "sql_validated":
+                    appendToResponse("✅ <span class='text-green-400'>SQL Validated</span><br>");
+                    break;
+                case "sql_validation_failed":
+                    appendToResponse("<br>❌ <span class='text-red-400'>Validation Failed:</span><br>");
+                    if (payload.data.issues && payload.data.issues.length) {
+                        appendToResponse("<ul class='list-disc ml-6 text-red-400'>" +
+                            payload.data.issues.map(i => `<li>${i}</li>`).join("") + "</ul>");
+                    }
+                    if (payload.data.suggestion) {
+                        appendToResponse(`<br><span class="text-yellow-400">Suggestion:</span> ${payload.data.suggestion}<br>`);
+                    }
+                    break;
+                case "response_chunk":
+                    appendToResponse(payload.data.chunk);
+                    break;
+                case "complete":
+                    const cursor = currentResponseElement.querySelector(".cursor");
+                    if (cursor) cursor.remove();
+                    if (payload.data && payload.data.conversationId) {
+                        conversationId = payload.data.conversationId;
+                        sessionStorage.setItem('chatConversationId', conversationId);
+                        console.log("Conversation ID set:", conversationId);
+                    }
+                    break;
+                case "error":
+                    appendToResponse("<br>❌ Error: " + payload.data.message);
+                    break;
+            }
+        }
+
+        function addMessage(content, sender) {
+            const div = document.createElement("div");
+            div.className = "flex mb-4";
+            if (sender === "user") {
+                div.innerHTML = `
+                  <div class="ml-auto flex">
+                    <div class="bg-dev-message-user rounded-lg p-3 max-w-3xl border border-dev-border">
+                      <p class="text-dev-text">${escapeHtml(content)}</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-dev-secondary bg-opacity-20 flex items-center justify-center ml-3">
+                      <span class="text-lg">👤</span>
+                    </div>
+                  </div>`;
+            }
+            msgContainer.appendChild(div);
+            msgContainer.scrollTop = msgContainer.scrollHeight;
+        }
+
+        function createResponseContainer() {
+            const div = document.createElement("div");
+            div.className = "flex mb-4";
+            div.innerHTML = `
+              <div class="w-10 h-10 rounded-full bg-dev-accent bg-opacity-20 flex items-center justify-center mr-3">
+                <span class="text-lg">✅</span>
+              </div>
+              <div class="bg-dev-message-ai rounded-lg p-3 max-w-3xl border border-dev-border">
+                <p class="text-dev-text response-text"></p>
+                <span class="cursor"></span>
+              </div>`;
+            msgContainer.appendChild(div);
+            msgContainer.scrollTop = msgContainer.scrollHeight;
+            return div;
+        }
+
+        function appendToResponse(text) {
+            if (!currentResponseElement) return;
+            currentResponseText += text;
+            const resp = currentResponseElement.querySelector(".response-text");
+            resp.innerHTML = currentResponseText.replace(/\n/g, "<br>");
+            msgContainer.scrollTop = msgContainer.scrollHeight;
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g,"&amp;").replace(/</g,"&lt;")
+                .replace(/>/g,"&gt;").replace(/"/g,"&quot;")
+                .replace(/'/g,"&#039;");
+        }
+
+        // prefill and auto-submit
+        document.querySelectorAll("#suggestions .suggestion-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const text = btn.innerText.replace(/^[^a-zA-Z]+/, "").trim();
+                commandSelect.value = "/db";
+                userInput.value = text;
+                chatForm.dispatchEvent(new Event("submit"));
+            });
+        });
+    });
+</script>
+</body>
+</html>
