@@ -8,9 +8,9 @@
         <version>3.4.4</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-	<artifactId>cosmos-lwm2m-mcp-client</artifactId>
+	<artifactId>stellarmind-client</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>cosmos-lwm2m-mcp-client</name>
+	<name>stellarmind-client</name>
 	<description>cosmos lwm2m mcp client</description>
 	<url/>
 	<licenses>
@@ -57,10 +57,7 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
+
         <!-- UI dependencies -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

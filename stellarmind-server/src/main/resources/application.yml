@@ -1,7 +1,7 @@
 spring:
   application:
     # Application name
-    name: mcp-server
+    name: stellarmind-server
 
   main:
     # Disable Spring banner during startup
@@ -11,14 +11,14 @@ spring:
 
   datasource:
     # PostgreSQL connection details
-    url: jdbc:postgresql://localhost:5432/lwm2m
+    url: jdbc:postgresql://localhost:5439/lwm2m
     username: postgres
     password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
     
   lwm2m:
-     auth:
-       token: ${LWM2M_AUTH_TOKEN:}
-    driver-class-name: org.postgresql.Driver
+    auth:
+      token: ${LWM2M_AUTH_TOKEN:}
 
   jpa:
     # Custom dialect for PGVector
