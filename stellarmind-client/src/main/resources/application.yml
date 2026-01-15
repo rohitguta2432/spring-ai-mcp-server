@@ -1,7 +1,13 @@
+embedding:
+  enabled: true
+
 spring:
   application:
     # Application name
-    name: lwm2m-mcp-client
+    name: stellarmind-client
+  data:
+    redis:
+      port: 6389
 
   thymeleaf:
     cache: false
@@ -10,7 +16,7 @@ spring:
 
   datasource:
     # PostgreSQL connection details
-    url: jdbc:postgresql://localhost:5432/lwm2m
+    url: jdbc:postgresql://localhost:5439/lwm2m
     username: postgres
     password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver

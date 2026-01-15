@@ -8,9 +8,9 @@
         <version>3.4.4</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-	<artifactId>cosmos-lwm2m-mcp-server</artifactId>
+	<artifactId>stellarmind-server</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>cosmos-lwm2m-mcp-server</name>
+	<name>stellarmind-server</name>
 	<description>Spring boot mcp server</description>
 	<url/>
 	<licenses>

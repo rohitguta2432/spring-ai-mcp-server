@@ -15,6 +15,7 @@ public class TokenService {
 
   private static final Logger log = LoggerFactory.getLogger(TokenService.class);
   private static final String TOKEN_URL = "https://idfed.mpsa.com/as/token.oauth2";
+
   // The token provided by the user to be used as a Bearer token for the request
   @org.springframework.beans.factory.annotation.Value("${lwm2m.auth.token:}")
   private String authToken;

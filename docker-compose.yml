@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: ankane/pgvector
+    ports:
+      - "5439:5432"
+    environment:
+      POSTGRES_DB: lwm2m
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

@@ -1,7 +1,7 @@
-# Cosmos DAC Database MCP Server
+# StellarMIND
 
 **Chat-to-SQL with pgvector.**  
-A Spring Boot MCP server that turns natural-language questions into **read-only SQL**, retrieves schema context via **pgvector**, and returns results.
+A Spring Boot MCP server (StellarMIND) that turns natural-language questions into **read-only SQL**, retrieves schema context via **pgvector**, and returns results.
 
 ---
 
