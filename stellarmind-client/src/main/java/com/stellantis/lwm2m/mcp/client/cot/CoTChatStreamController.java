@@ -47,7 +47,7 @@ public class CoTChatStreamController {
   public CoTChatStreamController(
       ChatClient.Builder chatClientBuilder,
       ChatMemoryRepository chatMemoryRepository,
-      @Qualifier("nexusconnect-mcp-server-callback-tool-provider")
+      @Qualifier("lwm2m-mcp-server-callback-tool-provider")
           SyncMcpToolCallbackProvider syncMcpToolCallbackProvider,
       DatabaseService databaseService,
       IntentEntityExtractor extractor,
@@ -123,8 +123,29 @@ public class CoTChatStreamController {
               .user(cleanQuery)
               .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, finalConvId.toString()))
               .stream()
-              .content()
-              .map(chunk -> formatSseData("response_chunk", Map.of("chunk", chunk)))
+              .chatResponse()
+              .map(
+                  response -> {
+                    Map<String, Object> data = new HashMap<>();
+                    String text = "";
+                    if (response.getResult() != null && response.getResult().getOutput() != null) {
+                      text = response.getResult().getOutput().getText();
+                    }
+                    data.put("chunk", text);
+                    if (response.getMetadata() != null) {
+                      String model = response.getMetadata().getModel();
+                      data.put("model", model);
+                      if (response.getMetadata().getUsage() != null) {
+                        data.put("usage", response.getMetadata().getUsage());
+                        log.info(
+                            "traceId={} model={} usage={}",
+                            traceId,
+                            model,
+                            response.getMetadata().getUsage());
+                      }
+                    }
+                    return formatSseData("response_chunk", data);
+                  })
               .concatWith(
                   Flux.just(
                       formatSseData(
@@ -247,8 +268,12 @@ public class CoTChatStreamController {
                     .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, convId.toString()))
                     .toolCallbacks(syncMcpToolCallbackProvider)
                     .stream()
-                    .content()
-                    .doOnNext(assistantResponse::append)
+                    .chatResponse()
+                    .doOnNext(
+                        response -> {
+                          String chunk = response.getResult().getOutput().getText();
+                          if (chunk != null) assistantResponse.append(chunk);
+                        })
                     .doOnComplete(
                         () -> {
                           try {
@@ -289,7 +314,18 @@ public class CoTChatStreamController {
                                 e);
                           }
                         })
-                    .map(chunk -> formatSseData("response_chunk", Map.of("chunk", chunk)))
+                    .map(
+                        response -> {
+                          Map<String, Object> data = new HashMap<>();
+                          data.put("chunk", response.getResult().getOutput().getText());
+                          if (response.getMetadata() != null) {
+                            data.put("model", response.getMetadata().getModel());
+                            if (response.getMetadata().getUsage() != null) {
+                              data.put("usage", response.getMetadata().getUsage());
+                            }
+                          }
+                          return formatSseData("response_chunk", data);
+                        })
                     .onErrorResume(
                         e -> Flux.just(formatSseData("error", Map.of("message", e.getMessage())))),
                 Flux.just(

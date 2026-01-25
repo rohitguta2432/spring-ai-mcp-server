@@ -1,121 +1,348 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>COSMOS DAC CoT Chat</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NexusConnect | Cyber-Industrial AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Outfit:wght@500;700&family=JetBrains+Mono&display=swap"
+        rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
                 extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                        tech: ['Outfit', 'sans-serif'],
+                    },
                     colors: {
-                        'dev-dark': '#ffffff',            
-                        'dev-darker': '#f8fafc',         
-                        'dev-accent': '#6366f1',         
-                        'dev-accent-hover': '#4f46e5',   
-                        'dev-secondary': '#3b82f6',      
-                        'dev-text': '#0f172a',           
-                        'dev-text-muted': '#475569',     
-                        'dev-border': '#e2e8f0',         
-                        'dev-message-user': '#eef2ff',   
-                        'dev-message-ai': '#f9fafb'      
+                        'cyber-bg': '#07080a',
+                        'cyber-panel': 'rgba(16, 18, 23, 0.7)',
+                        'cyber-indigo': '#6366f1',
+                        'cyber-cyan': '#22d3ee',
+                        'cyber-border': 'rgba(99, 102, 241, 0.2)',
+                        'cyber-text': '#e2e8f0',
                     }
                 }
             }
         }
     </script>
     <style>
-        .chat-container { height: calc(100vh - 180px); }
-        .message-container { height: calc(100vh - 280px); overflow-y: auto; }
-        @keyframes blink { 0%,100% {opacity:1;} 50% {opacity:0;} }
-        .cursor { display:inline-block; width:2px; height:1em; background:#6366f1; margin-left:2px; animation:blink 1s infinite; }
-        ::-webkit-scrollbar { width:8px; }
-        ::-webkit-scrollbar-track { background:#f1f5f9; }
-        ::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:4px; }
-        ::-webkit-scrollbar-thumb:hover { background:#94a3b8; }
-        .suggestion-btn {
-            background-color: #e2e8f0;
-            color: #0f172a;
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: background 0.2s;
+        :root {
+            --bg-color: #07080a;
+            --panel-bg: rgba(16, 18, 23, 0.6);
+            --header-gradient: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.15) 0%, transparent 50%);
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --border-color: rgba(99, 102, 241, 0.2);
+            --glass-border: rgba(255, 255, 255, 0.05);
+            --input-bg: rgba(16, 18, 23, 0.7);
+            --msg-user-bg: rgba(99, 102, 241, 0.1);
+            --msg-ai-bg: rgba(255, 255, 255, 0.05);
+            --sql-text: #eab308;
+            /* yellow-500 */
+            --sql-bg: rgba(0, 0, 0, 0.4);
         }
-        .suggestion-btn:hover {
-            background-color: #4f46e5;
-            color: white;
+
+        [data-theme="light"] {
+            --bg-color: #f8fafc;
+            --panel-bg: rgba(255, 255, 255, 0.85);
+            --header-gradient: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.08) 0%, transparent 50%);
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --border-color: rgba(99, 102, 241, 0.15);
+            --glass-border: rgba(255, 255, 255, 0.8);
+            --input-bg: #ffffff;
+            --msg-user-bg: #eef2ff;
+            --msg-ai-bg: rgba(15, 23, 42, 0.03);
+            --lab-log-bg: rgba(99, 102, 241, 0.05);
+            --sql-text: #4338ca;
+            /* indigo-700 */
+            --sql-bg: rgba(99, 102, 241, 0.08);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image:
+                var(--header-gradient),
+                radial-gradient(circle at 100% 100%, rgba(34, 211, 238, 0.05) 0%, transparent 30%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .glass {
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        .chat-container {
+            height: calc(100vh - 200px);
+        }
+
+        .scroll-custom::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .scroll-custom::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .scroll-custom::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.3);
+            border-radius: 10px;
+        }
+
+        .scroll-custom::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.5);
+        }
+
+        @keyframes pulse-cyan {
+
+            0%,
+            100% {
+                box-shadow: 0 0 5px rgba(34, 211, 238, 0.2);
+            }
+
+            50% {
+                box-shadow: 0 0 15px rgba(34, 211, 238, 0.4);
+            }
+        }
+
+        .ai-status-glow {
+            animation: pulse-cyan 3s infinite;
+        }
+
+        .suggestion-chip {
+            @apply px-3 py-1.5 rounded-full border text-xs font-medium cursor-pointer transition-all duration-300;
+            border-color: var(--border-color);
+            background: rgba(99, 102, 241, 0.05);
+            color: var(--text-main);
+        }
+
+        .suggestion-chip:hover {
+            @apply border-cyber-cyan text-cyber-cyan bg-opacity-20;
+            box-shadow: 0 0 10px rgba(34, 211, 238, 0.2);
+        }
+
+        .tech-border::after,
+        .tech-border::before {
+            content: "";
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-color: #6366f1;
+            box-shadow: 0 0 5px rgba(99, 102, 241, 0.5);
+        }
+
+        .tech-border {
+            position: relative;
+        }
+
+        .tech-border::after {
+            top: 0;
+            right: 0;
+            border-top: 2px solid;
+            border-right: 2px solid;
+        }
+
+        .tech-border::before {
+            bottom: 0;
+            left: 0;
+            border-bottom: 2px solid;
+            border-left: 2px solid;
+        }
+
+        /* Structured Item Cards */
+        .tech-card {
+            @apply my-3 p-4 rounded-xl border border-cyber-border/30 bg-black/20 dark:bg-black/40 relative overflow-hidden;
+            border-left: 4px solid #6366f1;
+        }
+
+        .card-header {
+            @apply text-[10px] uppercase font-tech tracking-widest text-cyber-cyan mb-3 flex items-center gap-2;
+        }
+
+        .card-grid {
+            @apply grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2;
+        }
+
+        .card-row {
+            @apply flex justify-between items-center py-1 border-b border-white/5;
+        }
+
+        .card-label {
+            @apply text-[10px] text-muted-foreground uppercase opacity-60 font-tech;
+            color: var(--text-muted);
+        }
+
+        .card-value {
+            @apply text-xs font-mono font-bold tracking-tight;
+            color: var(--text-main);
+        }
+
+        .theme-toggle {
+            @apply p-2 rounded-lg glass border border-cyber-border/30 hover:border-cyber-cyan/50 transition-all duration-300;
+        }
+
+        .sql-code-block {
+            background: var(--sql-bg);
+            color: var(--sql-text);
+            @apply p-3 rounded-lg block whitespace-pre-wrap font-mono text-xs border border-cyber-indigo/20 shadow-inner;
         }
     </style>
 </head>
-<body class="bg-dev-darker min-h-screen text-dev-text">
-<div class="container mx-auto px-4 py-8">
-    <!-- Header -->
-    <header class="mb-8">
-        <h1 class="text-3xl font-bold text-dev-accent">🪐 COSMOS DAC CoT</h1>
-        <p class="text-dev-text-muted mt-2">Streaming real-time answers from COSMOS DAC CoT assistant!</p>
-    </header>
 
-    <!-- Chat -->
-    <div class="bg-dev-dark rounded-xl shadow-lg p-6 chat-container border border-dev-border flex flex-col">
-        <div id="messageContainer" class="message-container flex-grow mb-4">
-            <!-- Welcome -->
-            <div class="flex mb-4">
-                <div class="w-10 h-10 rounded-full bg-dev-accent bg-opacity-20 flex items-center justify-center mr-3">
-                    <span class="text-lg">🪐</span>
+<body class="font-sans selection:bg-cyber-indigo selection:text-white" data-theme="dark">
+    <div class="max-w-7xl mx-auto px-4 py-6">
+        <!-- Header -->
+        <header class="flex items-center justify-between mb-8 group">
+            <div>
+                <h1
+                    class="font-tech text-4xl tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-cyber-indigo to-cyber-cyan">
+                    NEXUS<span class="font-light italic">CONNECT</span>
+                </h1>
+                <div class="flex items-center gap-2 mt-1">
+                    <span class="w-2 h-2 rounded-full bg-cyber-cyan shadow-[0_0_8px_#22d3ee]"></span>
+                    <p class="text-[10px] uppercase tracking-widest text-cyber-cyan font-bold opacity-70">Universal
+                        Knowledge Bridge v3.5</p>
                 </div>
-                <div class="bg-dev-message-ai rounded-lg p-3 max-w-3xl border border-dev-border">
-                    <p class="text-dev-text">Welcome! Ask me about COSMOS DAC CoT and see responses stream in real time 🚀</p>
+            </div>
+            <div class="flex items-center gap-6">
+                <div id="activeModelBadge"
+                    class="hidden md:flex items-center gap-2 px-3 py-1 rounded-full glass border border-cyber-cyan/30">
+                    <span class="relative flex h-2 w-2">
+                        <span
+                            class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyber-cyan opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-cyber-cyan"></span>
+                    </span>
+                    <span id="activeModelName"
+                        class="text-[10px] uppercase font-tech tracking-widest text-cyber-cyan">AWAITING MODEL...</span>
+                </div>
+                <button id="themeToggle" class="theme-toggle group" title="Toggle Surface/Deep Space Mode">
+                    <span id="themeIcon" class="text-lg">🌙</span>
+                </button>
+                <div class="hidden md:flex flex-col items-end">
+                    <div class="text-[10px] text-gray-500 uppercase tracking-widest">System Status</div>
+                    <div class="text-xs font-mono text-green-400">OPERATIONAL // LLM_SYNC_READY</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 chat-container">
+            <!-- Main Chat Pane -->
+            <div class="lg:col-span-8 flex flex-col glass rounded-2xl overflow-hidden tech-border">
+                <div id="messageContainer" class="flex-grow p-6 overflow-y-auto scroll-custom space-y-6">
+                    <!-- Welcome Message -->
+                    <div class="flex items-start gap-4">
+                        <div
+                            class="w-8 h-8 rounded-lg glass border border-cyber-cyan/30 flex items-center justify-center shrink-0">
+                            <span class="text-xs">🤖</span>
+                        </div>
+                        <div class="space-y-1">
+                            <span class="text-[10px] uppercase font-bold text-cyber-cyan opacity-60">Nexus AI</span>
+                            <div class="bg-white/[0.03] rounded-2xl p-4 border border-white/5">
+                                <p class="text-sm leading-relaxed">Initialized. I am connected to the
+                                    <b>NexusConnect</b> knowledge grid. State your directive.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Suggestions -->
+                <div id="suggestions" class="px-6 py-3 flex flex-wrap gap-2">
+                    <div class="suggestion-chip">🔍 Show active ECUs</div>
+                    <div class="suggestion-chip">📶 List vehicle gateways</div>
+                    <div class="suggestion-chip">📋 Recent DM events</div>
+                    <div class="suggestion-chip">❓ System Help</div>
+                </div>
+
+                <!-- Input Area -->
+                <div class="p-6 border-t border-white/5">
+                    <form id="chatForm" class="relative">
+                        <div
+                            class="flex items-center glass rounded-xl border border-cyber-border focus-within:border-cyber-cyan/50 transition-all duration-300">
+                            <select id="commandSelect"
+                                class="bg-transparent text-xs font-mono text-cyber-indigo px-4 py-4 outline-none border-r border-white/5 cursor-pointer uppercase font-bold tracking-tighter">
+                                <option value="/db" class="bg-[#101217]">/db</option>
+                                <option value="/help" class="bg-[#101217]">/help</option>
+                                <option value="/clear" class="bg-[#101217]">/clear</option>
+                            </select>
+                            <input id="userInput" autocomplete="off" type="text"
+                                class="flex-grow bg-transparent px-4 py-4 text-sm outline-none placeholder:text-gray-500 font-mono"
+                                placeholder="ENTER COMMAND OR DIRECTIVE...">
+                            <button type="submit"
+                                class="bg-cyber-indigo hover:bg-cyber-indigo/80 text-white font-tech px-8 py-4 text-xs tracking-widest uppercase transition-all m-1 rounded-lg">
+                                Execute
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Reasoning Lab Side Pane -->
+            <div class="lg:col-span-4 flex flex-col space-y-4 h-full overflow-hidden">
+                <div class="glass rounded-xl flex-grow overflow-hidden flex flex-col border border-cyber-border/30">
+                    <div class="px-4 py-3 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+                        <span class="text-[10px] font-tech uppercase tracking-widest text-cyber-indigo">Reasoning
+                            Lab</span>
+                        <div class="flex gap-1.5">
+                            <div class="w-1.5 h-1.5 rounded-full bg-red-500/50"></div>
+                            <div class="w-1.5 h-1.5 rounded-full bg-yellow-500/50"></div>
+                            <div class="w-1.5 h-1.5 rounded-full bg-green-500/50"></div>
+                        </div>
+                    </div>
+                    <div id="labContent"
+                        class="p-4 flex-grow overflow-y-auto font-mono text-[11px] scroll-custom space-y-4">
+                        <div class="opacity-30 italic">Awaiting directive input...</div>
+                    </div>
+                </div>
+
+                <div class="glass p-4 rounded-xl border border-cyber-border/30">
+                    <div class="flex items-center gap-3">
+                        <div class="w-2 h-2 rounded-full bg-cyber-indigo animate-ping"></div>
+                        <div class="text-[10px] uppercase font-tech tracking-widest opacity-60">Nexus Core Feed</div>
+                    </div>
+                    <div id="statusFeed"
+                        class="mt-2 text-[10px] font-mono whitespace-nowrap overflow-hidden text-cyber-cyan/70">
+                        IDLE // READY_FOR_INPUT
+                    </div>
                 </div>
             </div>
         </div>
-
-        <div id="suggestions" class="flex flex-wrap gap-2 mt-2">
-            <button class="suggestion-btn">🔍 Show me all active ECUs</button>
-            <button class="suggestion-btn">📊 Get bootstrap profiles for VIN</button>
-            <button class="suggestion-btn">⚙️ List pending DM operations</button>
-        </div>
-        <!-- Input -->
-        <div class="border-t border-dev-border pt-4 mt-auto relative">
-            <form id="chatForm" class="flex w-full">
-                <div class="relative flex-grow flex items-center bg-dev-darker border border-dev-border rounded-l-lg">
-                    <div class="relative border-r border-dev-border">
-                        <select id="commandSelect"
-                                class="appearance-none bg-transparent px-3 py-3 pr-8 focus:outline-none text-dev-text cursor-pointer">
-                            <option value="/db" selected>/db</option>
-                            <option value="/help">/help</option>
-                            <option value="/recent">/recent</option>
-                            <option value="/clear">/clear</option>
-                        </select>
-                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-dev-text-muted">
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                            </svg>
-                        </div>
-                    </div>
-                    <input id="userInput" autocomplete="off" type="text"
-                           class="flex-grow bg-transparent px-4 py-3 focus:outline-none text-dev-text"
-                           placeholder="Ask about COSMOS DAC CoT here...">
-                </div>
-                <button type="submit"
-                        class="bg-dev-accent text-white px-6 py-3 rounded-r-lg hover:bg-dev-accent-hover transition">Send</button>
-            </form>
-        </div>
     </div>
-</div>
 
-<script>
-    let conversationId = null;
+    <script>
+        // Theme logic
+        const body = document.body;
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
 
-    //  Load existing conversation on page load
-    conversationId = sessionStorage.getItem('chatConversationId');
-    if (conversationId) {
-        console.log("Resumed conversation:", conversationId);
-    }
+        function setTheme(theme) {
+            body.setAttribute('data-theme', theme);
+            themeIcon.innerText = theme === 'dark' ? '🌙' : '☀️';
+            localStorage.setItem('nexus-theme', theme);
+        }
 
-    document.addEventListener("DOMContentLoaded", () => {
+        const savedTheme = localStorage.getItem('nexus-theme') || 'dark';
+        setTheme(savedTheme);
+
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = body.getAttribute('data-theme');
+            setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+        });
+
+        let conversationId = sessionStorage.getItem('chatConversationId');
         const msgContainer = document.getElementById("messageContainer");
+        const labContent = document.getElementById("labContent");
+        const statusFeed = document.getElementById("statusFeed");
         const chatForm = document.getElementById("chatForm");
         const userInput = document.getElementById("userInput");
         const commandSelect = document.getElementById("commandSelect");
@@ -123,13 +350,43 @@
         let currentResponseElement = null;
         let currentResponseText = "";
 
+        function updateStatus(text) {
+            statusFeed.innerText = text.toUpperCase();
+        }
+
+        function addLabLog(type, content) {
+            const div = document.createElement("div");
+            div.className = "space-y-1 animate-in fade-in duration-500 mb-3";
+
+            // Define colors that work in both modes
+            let headerColor = "text-cyber-cyan";
+            let title = type;
+
+            if (type === 'ERROR') headerColor = "text-red-500";
+            if (type === 'SQL') headerColor = "text-cyber-indigo font-bold";
+
+            div.innerHTML = `
+            <div class="flex items-center gap-2">
+                <span class="w-1 h-3 bg-cyber-indigo"></span>
+                <span class="${headerColor} uppercase tracking-tighter text-[10px]">${title}</span>
+            </div>
+            <div style="background: var(--lab-log-bg, rgba(255,255,255,0.02))" class="pl-3 border-l border-cyber-indigo/20 py-2 rounded-r-lg text-sm">
+                ${content}
+            </div>
+        `;
+            labContent.appendChild(div);
+            labContent.scrollTop = labContent.scrollHeight;
+        }
+
         chatForm.addEventListener("submit", async (e) => {
             e.preventDefault();
             const message = userInput.value.trim();
             if (!message) return;
 
-            // Combine command with message
             const fullMessage = commandSelect.value + " " + message;
+
+            labContent.innerHTML = "";
+            updateStatus("Processing Request...");
 
             addMessage(fullMessage, "user");
             userInput.value = "";
@@ -137,106 +394,154 @@
             currentResponseElement = createResponseContainer();
             currentResponseText = "";
 
-            const response = await fetch("/api/v3/cot-chat/stream", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ text: fullMessage,
-                    ...(conversationId ? { conversationId } : {})
-                })
-            });
+            try {
+                const response = await fetch("/api/v3/cot-chat/stream", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        text: fullMessage,
+                        ...(conversationId ? { conversationId } : {})
+                    })
+                });
 
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-            let buffer = "";
+                if (!response.ok) throw new Error("Connection failed");
 
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = "";
 
-                buffer += decoder.decode(value, { stream: true });
-                const events = buffer.split("\n\n");
-                buffer = events.pop();
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
 
-                for (const event of events) {
-                    if (event.startsWith("data: ")) {
-                        const payload = JSON.parse(event.slice(6));
-                        handleEvent(payload);
+                    buffer += decoder.decode(value, { stream: true });
+                    const events = buffer.split("\n\n");
+                    buffer = events.pop();
+
+                    for (const event of events) {
+                        if (event.startsWith("data: ")) {
+                            try {
+                                const payload = JSON.parse(event.slice(6));
+                                handleEvent(payload);
+                            } catch (e) { console.error("Parse error", e); }
+                        }
                     }
                 }
+            } catch (err) {
+                handleEvent({ type: 'error', data: { message: err.message } });
             }
         });
 
+        let currentModel = "";
+        let lastUsage = null;
+
         function handleEvent(payload) {
-            switch(payload.type) {
+            switch (payload.type) {
                 case "analysis":
-                    appendToResponse("🤖 Intent: " + payload.data.intent + "<br>");
+                    updateStatus("Cognitive Analysis Active");
+                    addLabLog("Intent", payload.data.intent);
+                    currentModel = "";
+                    lastUsage = null;
                     break;
                 case "schema_selected":
-                    appendToResponse("📊 Schema: " + payload.data.selectedSchema + "<br>");
+                    addLabLog("Context", `Schema: ${payload.data.selectedSchema}`);
                     break;
                 case "sql_generated":
-                    appendToResponse(`<span class="text-dev-accent text-sm">SQL → ${payload.data.sqlQuery}</span><br>`);
+                    addLabLog("SQL", `<code class="sql-code-block">${payload.data.sqlQuery}</code>`);
                     break;
                 case "sql_validated":
-                    appendToResponse("✅ <span class='text-green-400'>SQL Validated</span><br>");
+                    addLabLog("Security", "<span class='text-green-500 font-bold'>Structural Validation Passed</span>");
                     break;
                 case "sql_validation_failed":
-                    appendToResponse("<br>❌ <span class='text-red-400'>Validation Failed:</span><br>");
-                    if (payload.data.issues && payload.data.issues.length) {
-                        appendToResponse("<ul class='list-disc ml-6 text-red-400'>" +
-                            payload.data.issues.map(i => `<li>${i}</li>`).join("") + "</ul>");
-                    }
-                    if (payload.data.suggestion) {
-                        appendToResponse(`<br><span class="text-yellow-400">Suggestion:</span> ${payload.data.suggestion}<br>`);
-                    }
+                    addLabLog("ERROR", `Validation Error: ${payload.data.suggestion}`);
                     break;
                 case "response_chunk":
+                    updateStatus("Streaming Data");
+
+                    if (payload.data.model && payload.data.model !== currentModel) {
+                        currentModel = payload.data.model;
+                        document.getElementById("activeModelName").innerText = currentModel;
+                        document.getElementById("activeModelBadge").classList.remove("hidden");
+                        addLabLog("Nexus Core", `Targeting Model: <span class="text-cyber-cyan font-bold">${currentModel}</span>`);
+                    }
+
+                    if (payload.data.usage) {
+                        lastUsage = payload.data.usage;
+                    }
+
                     appendToResponse(payload.data.chunk);
                     break;
                 case "complete":
-                    const cursor = currentResponseElement.querySelector(".cursor");
+                    updateStatus("Task Finalized");
+                    const cursor = currentResponseElement.querySelector(".animate-pulse");
                     if (cursor) cursor.remove();
-                    if (payload.data && payload.data.conversationId) {
+
+                    // Display Usage in Bubble and Lab
+                    const usage = payload.data.usage || lastUsage;
+                    if (usage && (usage.totalTokens > 0 || usage.promptTokens > 0)) {
+                        const inT = usage.promptTokens || 0;
+                        const outT = usage.completionTokens || usage.generationTokens || 0;
+                        const totalT = usage.totalTokens || (inT + outT);
+
+                        addLabLog("Resources", `Tokens: <span class="text-green-500 font-bold">${totalT}</span> (In: ${inT} | Out: ${outT})`);
+
+                        // Append to bubble
+                        const statsDiv = document.createElement("div");
+                        statsDiv.className = "mt-3 pt-2 border-t border-white/5 text-[10px] opacity-40 flex justify-between font-mono";
+                        statsDiv.innerHTML = `<span>MODEL: ${currentModel}</span><span>TOKENS: ${totalT}</span>`;
+                        currentResponseElement.querySelector(".response-text").parentElement.appendChild(statsDiv);
+                    }
+
+                    if (payload.data?.totalTimeMs) {
+                        addLabLog("Performance", `Latency: <span class="text-cyber-indigo font-bold">${payload.data.totalTimeMs}ms</span>`);
+                    }
+
+                    if (payload.data?.conversationId) {
                         conversationId = payload.data.conversationId;
                         sessionStorage.setItem('chatConversationId', conversationId);
-                        console.log("Conversation ID set:", conversationId);
                     }
                     break;
                 case "error":
-                    appendToResponse("<br>❌ Error: " + payload.data.message);
+                    updateStatus("System Fault");
+                    addLabLog("ERROR", payload.data.message);
+                    appendToResponse(`\n\nSYSTEM_ERROR: ${payload.data.message}`);
                     break;
             }
         }
 
         function addMessage(content, sender) {
             const div = document.createElement("div");
-            div.className = "flex mb-4";
-            if (sender === "user") {
-                div.innerHTML = `
-                  <div class="ml-auto flex">
-                    <div class="bg-dev-message-user rounded-lg p-3 max-w-3xl border border-dev-border">
-                      <p class="text-dev-text">${escapeHtml(content)}</p>
+            div.className = "flex items-start gap-4 animate-in slide-in-from-right-2 duration-300";
+            div.innerHTML = `
+            <div class="ml-auto flex items-start flex-row-reverse gap-4">
+                <div class="w-8 h-8 rounded-lg glass border border-cyber-indigo/30 flex items-center justify-center shrink-0">
+                    <span class="text-xs">👤</span>
+                </div>
+                <div class="text-right space-y-1">
+                    <span class="text-[10px] uppercase font-bold text-cyber-indigo opacity-60">Authorized User</span>
+                    <div style="background: var(--msg-user-bg)" class="rounded-2xl p-4 border border-cyber-indigo/20 shadow-sm">
+                        <p class="text-sm leading-relaxed">${escapeHtml(content)}</p>
                     </div>
-                    <div class="w-10 h-10 rounded-full bg-dev-secondary bg-opacity-20 flex items-center justify-center ml-3">
-                      <span class="text-lg">👤</span>
-                    </div>
-                  </div>`;
-            }
+                </div>
+            </div>`;
             msgContainer.appendChild(div);
             msgContainer.scrollTop = msgContainer.scrollHeight;
         }
 
         function createResponseContainer() {
             const div = document.createElement("div");
-            div.className = "flex mb-4";
+            div.className = "flex items-start gap-4 animate-in slide-in-from-left-2 duration-300";
             div.innerHTML = `
-              <div class="w-10 h-10 rounded-full bg-dev-accent bg-opacity-20 flex items-center justify-center mr-3">
-                <span class="text-lg">✅</span>
-              </div>
-              <div class="bg-dev-message-ai rounded-lg p-3 max-w-3xl border border-dev-border">
-                <p class="text-dev-text response-text"></p>
-                <span class="cursor"></span>
-              </div>`;
+            <div class="w-8 h-8 rounded-lg glass border border-cyber-cyan/30 flex items-center justify-center shrink-0 ai-status-glow">
+                <span class="text-xs">🤖</span>
+            </div>
+            <div class="space-y-1">
+                <span class="text-[10px] uppercase font-bold text-cyber-cyan opacity-60">Nexus AI</span>
+                <div style="background: var(--msg-ai-bg)" class="rounded-2xl p-4 border border-white/5 relative shadow-sm">
+                    <p class="text-sm leading-relaxed response-text font-sans tracking-tight"></p>
+                    <span class="inline-block w-2 h-4 bg-cyber-cyan ml-1 animate-pulse"></span>
+                </div>
+            </div>`;
             msgContainer.appendChild(div);
             msgContainer.scrollTop = msgContainer.scrollHeight;
             return div;
@@ -245,27 +550,26 @@
         function appendToResponse(text) {
             if (!currentResponseElement) return;
             currentResponseText += text;
-            const resp = currentResponseElement.querySelector(".response-text");
-            resp.innerHTML = currentResponseText.replace(/\n/g, "<br>");
+            const container = currentResponseElement.querySelector(".response-text");
+            container.innerText = currentResponseText;
             msgContainer.scrollTop = msgContainer.scrollHeight;
         }
 
         function escapeHtml(str) {
-            return str.replace(/&/g,"&amp;").replace(/</g,"&lt;")
-                .replace(/>/g,"&gt;").replace(/"/g,"&quot;")
-                .replace(/'/g,"&#039;");
+            return str.replace(/[&<>"']/g, m => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[m]));
         }
 
-        // prefill and auto-submit
-        document.querySelectorAll("#suggestions .suggestion-btn").forEach(btn => {
-            btn.addEventListener("click", () => {
-                const text = btn.innerText.replace(/^[^a-zA-Z]+/, "").trim();
+        document.querySelectorAll(".suggestion-chip").forEach(chip => {
+            chip.addEventListener("click", () => {
+                const text = chip.innerText.replace(/^[^a-zA-Z]+/, "").trim();
                 commandSelect.value = "/db";
                 userInput.value = text;
                 chatForm.dispatchEvent(new Event("submit"));
             });
         });
-    });
-</script>
+    </script>
 </body>
+
 </html>
