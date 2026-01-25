@@ -11,12 +11,12 @@ spring:
 
   datasource:
     # PostgreSQL connection details
-    url: jdbc:postgresql://localhost:5439/nexusconnect
+    url: jdbc:postgresql://localhost:5432/lwm2m
     username: postgres
     password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
     
-  nexusconnect:
+  lwm2m:
     auth:
       token: ${LWM2M_AUTH_TOKEN:}
 
@@ -30,7 +30,7 @@ spring:
   mcp:
     server:
       # MCP server metadata
-      name: nexusconnect-mcp-server
+      name: lwm2m-mcp-server
       version: 0.0.1
       # type: ASYNC   # Uncomment if server type should be ASYNC
 

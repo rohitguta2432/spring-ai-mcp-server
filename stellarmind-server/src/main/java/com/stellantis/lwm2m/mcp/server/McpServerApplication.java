@@ -8,7 +8,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 
-@SpringBootApplication(scanBasePackages = "com.stellantis.nexusconnect.mcp.server")
+@SpringBootApplication(scanBasePackages = "com.stellantis.lwm2m.mcp.server")
 public class McpServerApplication {
 
   public static void main(String[] args) {

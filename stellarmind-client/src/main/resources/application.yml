@@ -16,14 +16,14 @@ spring:
 
   datasource:
     # PostgreSQL connection details
-    url: jdbc:postgresql://localhost:5439/nexusconnect
+    url: jdbc:postgresql://localhost:5432/lwm2m
     username: postgres
     password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
 
   jpa:
     # Custom dialect for PGVector
-    database-platform: com.stellantis.nexusconnect.mcp.client.config.PostgreSQLVectorDialect
+    database-platform: com.stellantis.lwm2m.mcp.client.config.PostgreSQLVectorDialect
     hibernate:
       ddl-auto: update   # Auto-update schema (use cautiously in prod)
     show-sql: true       # Show SQL queries in logs
@@ -39,7 +39,7 @@ spring:
         # Define SSE connection to MCP server
         sse:
           connections:
-            nexusconnect-mcp-server:
+            lwm2m-mcp-server:
               url: http://localhost:8082
             # elk-mcp-server:
             #   url: http://localhost:3000/mcp
@@ -54,6 +54,7 @@ spring:
         options:
           model: gpt-4.1 #gpt-4.1
           temperature: 0.2 #0.2
+          stream-usage: true
           # max-tokens: 1000
       embedding:
         options:
@@ -111,7 +112,7 @@ management:
         enabled: true     # modern property (optional, defaults to true)
   metrics:
     tags:
-      application: nexusconnect-mcp-client
+      application: lwm2m-mcp-client
   tracing:
     sampling:
       probability: 1.0

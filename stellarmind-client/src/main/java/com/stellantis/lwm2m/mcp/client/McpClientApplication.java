@@ -16,7 +16,7 @@ public class McpClientApplication {
   }
 
   @Bean
-  @Qualifier("nexusconnect-mcp-server-callback-tool-provider")
+  @Qualifier("lwm2m-mcp-server-callback-tool-provider")
   public SyncMcpToolCallbackProvider toolCallbackProvider(List<McpSyncClient> mcpSyncClients) {
     return new SyncMcpToolCallbackProvider(mcpSyncClients);
   }

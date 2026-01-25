@@ -19,26 +19,69 @@ A Spring Boot MCP server (StellarMIND) that turns natural-language questions int
 ---
 
 ## Prerequisites
-- JDK **17+**
-- PostgreSQL **14+** with `pgvector` extension installed
-- OpenAI (or Bedrock) credentials (for embeddings + LLM)
-- Maven 3.8+
+- **JDK 17+** (Recommended: OpenJDK 21)
+- **Docker & Docker Compose**
+- **Maven 3.8+**
+- **Redis Server** (Default port: 6389 as per client config)
+- **OpenAI API Key** (Required for embeddings and reasoning)
 
 ---
 
-## Database Setup (Run Once)
-```sql
-CREATE EXTENSION IF NOT EXISTS vector;
-CREATE SCHEMA IF NOT EXISTS gtw;
+## Getting Started
 
-CREATE TABLE IF NOT EXISTS gtw.knowledge_chunks (
-  id BIGSERIAL PRIMARY KEY,
-  content TEXT NOT NULL,
-  embedding vector(1536) NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
+### 1. Environment Configuration
+Set your OpenAI API key in your terminal:
+```bash
+export OPENAI_API_KEY="your_api_key_here"
+```
 
--- Optional for large corpora:
-CREATE INDEX IF NOT EXISTS idx_knowledge_chunks_embedding
-  ON gtw.knowledge_chunks USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
-# spring-ai-mcp-server
+### 2. Start Infrastructure (PostgreSQL & Vector Store)
+Use Docker Compose to spin up the database with the `pgvector` extension:
+```bash
+# From the project root
+docker compose up -d
+```
+> [!NOTE]
+> Ensure your local Redis server is running on port `6389` or update `stellarmind-client/src/main/resources/application.yml`.
+
+### 3. Run the Backend Services
+Open two terminal windows to run the MCP Server and Client:
+
+**Terminal 1: NexusConnect MCP Server**
+```bash
+cd stellarmind-server
+./mvnw spring-boot:run
+```
+*The server will start on port `8082`.*
+
+**Terminal 2: StellarMIND Client (UI)**
+```bash
+cd stellarmind-client
+./mvnw spring-boot:run
+```
+*The client will start on port `8084`.*
+
+---
+
+## 🖥 Web Interface
+Once both services are running, access the Chain of Thought (CoT) chat interface at:
+**[http://localhost:8084/cot](http://localhost:8084/cot)**
+
+---
+
+## 🧪 Testing & Verification
+A dedicated Postman collection is provided for automated testing of the streaming API.
+
+```bash
+cd postman
+./run_tests.sh
+```
+This script uses **Newman** (via `npx`) to verify 4 core scenarios: Normal queries, DB commands, Error handling, and Context persistence.
+
+---
+
+## Project Structure
+- `stellarmind-server`: The MCP server exposing database and vehicle operation tools.
+- `stellarmind-client`: The Spring AI client and web interface.
+- `postman/`: API test collection and automation scripts.
+- `FEATURES.md`: Full functional breakdown of the project capabilities.
