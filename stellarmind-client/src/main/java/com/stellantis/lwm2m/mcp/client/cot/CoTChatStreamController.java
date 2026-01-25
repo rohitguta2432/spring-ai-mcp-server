@@ -47,7 +47,7 @@ public class CoTChatStreamController {
   public CoTChatStreamController(
       ChatClient.Builder chatClientBuilder,
       ChatMemoryRepository chatMemoryRepository,
-      @Qualifier("lwm2m-mcp-server-callback-tool-provider")
+      @Qualifier("nexusconnect-mcp-server-callback-tool-provider")
           SyncMcpToolCallbackProvider syncMcpToolCallbackProvider,
       DatabaseService databaseService,
       IntentEntityExtractor extractor,

@@ -14,7 +14,7 @@ public class DmOperationTool {
 
   private static final Logger log = LoggerFactory.getLogger(DmOperationTool.class);
   private static final String OPERATION_API_URL =
-      "http://localhost:9001/lwm2m-gtw-ops/v1/operations";
+      "http://localhost:9001/nexusconnect-gtw-ops/v1/operations";
 
   private final TokenService tokenService;
   private final WebClient webClient;
