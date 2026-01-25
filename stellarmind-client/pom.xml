@@ -11,7 +11,7 @@
 	<artifactId>stellarmind-client</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>stellarmind-client</name>
-	<description>cosmos lwm2m mcp client</description>
+	<description>cosmos nexusconnect mcp client</description>
 	<url/>
 	<licenses>
 		<license/>

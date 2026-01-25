@@ -1,0 +1,146 @@
+{
+	"info": {
+		"_postman_id": "a1b2c3d4-e5f6-4g7h-8i9j-k0l1m2n3o4p5",
+		"name": "StellarMIND Streaming Chat API Tests",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Scenario 1: Normal Query",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"text\": \"What tables are available in the system?\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8084/api/v3/cot-chat/stream",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8084",
+					"path": [
+						"api",
+						"v3",
+						"cot-chat",
+						"stream"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Scenario 2: DB Command",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"text\": \"/db SELECT table_name FROM information_schema.tables WHERE table_schema = 'gtw'\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8084/api/v3/cot-chat/stream",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8084",
+					"path": [
+						"api",
+						"v3",
+						"cot-chat",
+						"stream"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Scenario 3: Empty Query",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 400\", function () {",
+							"    pm.response.to.have.status(400);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"text\": \"\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8084/api/v3/cot-chat/stream",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8084",
+					"path": [
+						"api",
+						"v3",
+						"cot-chat",
+						"stream"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Scenario 4: Conversation ID Continuation",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"text\": \"Show me more details\",\n    \"conversationId\": \"550e8400-e29b-41d4-a716-446655440000\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8084/api/v3/cot-chat/stream",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8084",
+					"path": [
+						"api",
+						"v3",
+						"cot-chat",
+						"stream"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
