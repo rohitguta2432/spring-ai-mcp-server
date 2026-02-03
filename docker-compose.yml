@@ -4,7 +4,7 @@ services:
   postgres:
     image: ankane/pgvector
     ports:
-      - "5439:5432"
+      - "5432:5432"
     environment:
       POSTGRES_DB: lwm2m
       POSTGRES_USER: postgres

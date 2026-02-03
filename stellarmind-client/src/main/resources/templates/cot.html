@@ -305,6 +305,87 @@
                     </div>
                 </div>
 
+                <!-- Token Usage Dashboard -->
+                <div class="glass p-4 rounded-xl border border-cyber-border/30">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg">🎟️</span>
+                            <span class="text-[10px] font-tech uppercase tracking-widest text-cyber-indigo">Token
+                                Usage</span>
+                        </div>
+                        <button id="resetTokens"
+                            class="text-[9px] uppercase text-gray-500 hover:text-cyber-cyan transition-colors"
+                            title="Reset session totals">
+                            Reset
+                        </button>
+                    </div>
+
+                    <!-- Current Request -->
+                    <div class="space-y-3 mb-4">
+                        <div class="text-[9px] uppercase opacity-50 font-tech">Current Request</div>
+
+                        <!-- Input Tokens -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-[10px]">
+                                <span class="opacity-60">📥 Input (Prompt)</span>
+                                <span id="inputTokens" class="font-mono text-cyber-cyan font-bold">0</span>
+                            </div>
+                            <div class="h-1.5 bg-black/30 rounded-full overflow-hidden">
+                                <div id="inputBar"
+                                    class="h-full bg-gradient-to-r from-cyber-cyan to-cyber-indigo rounded-full transition-all duration-500"
+                                    style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Output Tokens -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-[10px]">
+                                <span class="opacity-60">📤 Output (Response)</span>
+                                <span id="outputTokens" class="font-mono text-green-400 font-bold">0</span>
+                            </div>
+                            <div class="h-1.5 bg-black/30 rounded-full overflow-hidden">
+                                <div id="outputBar"
+                                    class="h-full bg-gradient-to-r from-green-500 to-emerald-400 rounded-full transition-all duration-500"
+                                    style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Total for Request -->
+                        <div class="flex justify-between items-center pt-2 border-t border-white/5">
+                            <span class="text-[10px] opacity-60">Total</span>
+                            <span id="totalTokens" class="font-mono text-sm font-bold text-cyber-indigo">0</span>
+                        </div>
+                    </div>
+
+                    <!-- Session Totals -->
+                    <div class="p-3 rounded-lg" style="background: var(--lab-log-bg, rgba(99,102,241,0.05))">
+                        <div class="text-[9px] uppercase opacity-50 font-tech mb-2">Session Totals</div>
+                        <div class="grid grid-cols-2 gap-2 text-[10px]">
+                            <div class="flex flex-col">
+                                <span class="opacity-50">Requests</span>
+                                <span id="sessionRequests" class="font-mono font-bold">0</span>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="opacity-50">Total Tokens</span>
+                                <span id="sessionTokens" class="font-mono font-bold text-cyber-cyan">0</span>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="opacity-50">Input</span>
+                                <span id="sessionInput" class="font-mono text-cyber-cyan">0</span>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="opacity-50">Output</span>
+                                <span id="sessionOutput" class="font-mono text-green-400">0</span>
+                            </div>
+                        </div>
+                        <!-- Estimated Cost -->
+                        <div class="mt-3 pt-2 border-t border-white/10 flex justify-between items-center">
+                            <span class="text-[9px] uppercase opacity-50">Est. Cost (GPT-4.1)</span>
+                            <span id="sessionCost" class="font-mono text-xs font-bold text-yellow-400">$0.0000</span>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="glass p-4 rounded-xl border border-cyber-border/30">
                     <div class="flex items-center gap-3">
                         <div class="w-2 h-2 rounded-full bg-cyber-indigo animate-ping"></div>
@@ -435,6 +516,83 @@
         let currentModel = "";
         let lastUsage = null;
 
+        // Token tracking state
+        let sessionStats = JSON.parse(sessionStorage.getItem('tokenStats') || '{"requests":0,"input":0,"output":0,"total":0}');
+
+        // GPT-4.1 pricing (per 1M tokens) - adjust as needed
+        const PRICING = { input: 2.00, output: 8.00 }; // $2/1M input, $8/1M output
+
+        function updateTokenDisplay(input, output) {
+            console.log('updateTokenDisplay:', input, output);
+            const total = input + output;
+            const inputEl = document.getElementById('inputTokens');
+            const outputEl = document.getElementById('outputTokens');
+            const totalEl = document.getElementById('totalTokens');
+            const inputBar = document.getElementById('inputBar');
+            const outputBar = document.getElementById('outputBar');
+
+            if (!inputEl || !outputEl || !totalEl) {
+                console.error('Token display elements not found!');
+                return;
+            }
+
+            inputEl.innerText = input.toLocaleString();
+            outputEl.innerText = output.toLocaleString();
+            totalEl.innerText = total.toLocaleString();
+
+            // Progress bars (max ~4000 tokens typical)
+            const maxTokens = 4000;
+            if (inputBar) inputBar.style.width = Math.min((input / maxTokens) * 100, 100) + '%';
+            if (outputBar) outputBar.style.width = Math.min((output / maxTokens) * 100, 100) + '%';
+        }
+
+        function updateSessionDisplay() {
+            console.log('updateSessionDisplay:', sessionStats);
+            const reqEl = document.getElementById('sessionRequests');
+            const tokEl = document.getElementById('sessionTokens');
+            const inEl = document.getElementById('sessionInput');
+            const outEl = document.getElementById('sessionOutput');
+            const costEl = document.getElementById('sessionCost');
+
+            if (!reqEl || !tokEl || !inEl || !outEl || !costEl) {
+                console.error('Session display elements not found!');
+                return;
+            }
+
+            reqEl.innerText = sessionStats.requests;
+            tokEl.innerText = sessionStats.total.toLocaleString();
+            inEl.innerText = sessionStats.input.toLocaleString();
+            outEl.innerText = sessionStats.output.toLocaleString();
+
+            // Calculate cost
+            const inputCost = (sessionStats.input / 1_000_000) * PRICING.input;
+            const outputCost = (sessionStats.output / 1_000_000) * PRICING.output;
+            const totalCost = inputCost + outputCost;
+            costEl.innerText = '$' + totalCost.toFixed(4);
+        }
+
+        // Initialize session display
+        updateSessionDisplay();
+
+        function addToSession(input, output) {
+            sessionStats.requests++;
+            sessionStats.input += input;
+            sessionStats.output += output;
+            sessionStats.total += (input + output);
+            sessionStorage.setItem('tokenStats', JSON.stringify(sessionStats));
+            updateSessionDisplay();
+        }
+
+        document.getElementById('resetTokens').addEventListener('click', () => {
+            sessionStats = { requests: 0, input: 0, output: 0, total: 0 };
+            sessionStorage.setItem('tokenStats', JSON.stringify(sessionStats));
+            updateSessionDisplay();
+            updateTokenDisplay(0, 0);
+        });
+
+        let currentInput = 0;
+        let currentOutput = 0;
+
         function handleEvent(payload) {
             switch (payload.type) {
                 case "analysis":
@@ -442,6 +600,9 @@
                     addLabLog("Intent", payload.data.intent);
                     currentModel = "";
                     lastUsage = null;
+                    currentInput = 0;
+                    currentOutput = 0;
+                    updateTokenDisplay(0, 0);
                     break;
                 case "schema_selected":
                     addLabLog("Context", `Schema: ${payload.data.selectedSchema}`);
@@ -467,6 +628,14 @@
 
                     if (payload.data.usage) {
                         lastUsage = payload.data.usage;
+                        // Update token display in real-time during streaming
+                        const inT = payload.data.usage.promptTokens || 0;
+                        const outT = payload.data.usage.completionTokens || payload.data.usage.generationTokens || 0;
+                        if (inT > 0 || outT > 0) {
+                            currentInput = inT;
+                            currentOutput = outT;
+                            updateTokenDisplay(inT, outT);
+                        }
                     }
 
                     appendToResponse(payload.data.chunk);
@@ -479,9 +648,13 @@
                     // Display Usage in Bubble and Lab
                     const usage = payload.data.usage || lastUsage;
                     if (usage && (usage.totalTokens > 0 || usage.promptTokens > 0)) {
-                        const inT = usage.promptTokens || 0;
-                        const outT = usage.completionTokens || usage.generationTokens || 0;
+                        const inT = usage.promptTokens || currentInput || 0;
+                        const outT = usage.completionTokens || usage.generationTokens || currentOutput || 0;
                         const totalT = usage.totalTokens || (inT + outT);
+
+                        // Final update for token display
+                        updateTokenDisplay(inT, outT);
+                        addToSession(inT, outT);
 
                         addLabLog("Resources", `Tokens: <span class="text-green-500 font-bold">${totalT}</span> (In: ${inT} | Out: ${outT})`);
 
@@ -566,7 +739,7 @@
                 const text = chip.innerText.replace(/^[^a-zA-Z]+/, "").trim();
                 commandSelect.value = "/db";
                 userInput.value = text;
-                chatForm.dispatchEvent(new Event("submit"));
+                chatForm.requestSubmit();
             });
         });
     </script>

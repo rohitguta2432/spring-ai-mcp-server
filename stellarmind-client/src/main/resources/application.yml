@@ -43,7 +43,7 @@ spring:
               url: http://localhost:8082
             # elk-mcp-server:
             #   url: http://localhost:3000/mcp
-        type: SYNC   # Client type (SYNC or ASYNC)
+        type: SYNC   # SYNC mode required for MCP tool execution
         toolcallback:
           enabled: true
 
